@@ -1,118 +1,79 @@
-/**
- * games-common.js
- * 複数のゲームで使える共通ユーティリティ関数
- */
+// Common Game Utilities - Reusable functions for all games
 
 /**
- * ゲーム終了判定
- * @param {number} currentScore - 現在のスコア
- * @param {number} targetScore - 目標スコア（デフォルト15）
- * @returns {boolean} 目標スコア以上なら true
+ * Check if game has ended based on score
+ * @param {number} currentScore - Current player score
+ * @param {number} targetScore - Target score to reach (default: 15)
+ * @returns {boolean} - True if game should end
  */
 function isGameEnd(currentScore, targetScore = 15) {
     return currentScore >= targetScore;
-}
-
-/**
- * ボーナスポイント計算
- * @param {number} matchCount - マッチ数（3個以上）
- * @param {number} basePoints - 基本ポイント
- * @returns {number} 合計ポイント
- */
-function calculateBonus(matchCount, basePoints = 10) {
-    let bonus = basePoints;
-    
-    // マッチ数に応じたボーナス
-    if (matchCount === 4) {
-        bonus += 5;
-    } else if (matchCount === 5) {
-        bonus += 10;
-    } else if (matchCount > 5) {
-        bonus += (matchCount - 3) * 2;
-    }
-    
-    return bonus;
-}
-
-/**
- * 値の範囲チェック
- * @param {number} value - チェックする値
- * @param {number} min - 最小値
- * @param {number} max - 最大値
- * @returns {boolean} 範囲内なら true
- */
-function checkValidation(value, min, max) {
+  }
+  
+  /**
+   * Calculate bonus points based on match count
+   * @param {number} matchCount - Number of matches
+   * @param {number} basePoints - Base points per match
+   * @returns {number} - Total bonus points
+   */
+  function calculateBonus(matchCount, basePoints = 1) {
+    return matchCount * basePoints;
+  }
+  
+  /**
+   * Validate if value is within range
+   * @param {number} value - Value to check
+   * @param {number} min - Minimum value
+   * @param {number} max - Maximum value
+   * @returns {boolean} - True if value is within range
+   */
+  function checkValidation(value, min, max) {
     return value >= min && value <= max;
-}
-
-/**
- * スコア表示フォーマット
- * @param {number} score - スコア
- * @returns {string} フォーマットされたスコア文字列
- */
-function formatScore(score) {
-    return score.toString().padStart(4, '0');
-}
-
-/**
- * 配列からランダムに要素を取得
- * @param {array} array - 対象配列
- * @returns {*} ランダムに選ばれた要素
- */
-function getRandomFromArray(array) {
-    if (array.length === 0) return null;
+  }
+  
+  /**
+   * Format score for display
+   * @param {number} score - Score to format
+   * @returns {string} - Formatted score string
+   */
+  function formatScore(score) {
+    return score.toString().padStart(2, '0');
+  }
+  
+  /**
+   * Get random element from array
+   * @param {array} array - Array to select from
+   * @returns {any} - Random element from array
+   */
+  function getRandomFromArray(array) {
+    if (!array || array.length === 0) return null;
     return array[Math.floor(Math.random() * array.length)];
-}
-
-/**
- * 配列をシャッフル（Fisher-Yates）
- * @param {array} array - シャッフルする配列
- * @returns {array} シャッフル済み配列
- */
-function shuffleArray(array) {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-}
-
-/**
- * ディープコピー
- * @param {*} obj - コピーするオブジェクト
- * @returns {*} コピーされたオブジェクト
- */
-function deepCopy(obj) {
-    if (obj === null || typeof obj !== 'object') return obj;
-    if (obj instanceof Date) return new Date(obj.getTime());
-    if (obj instanceof Array) return obj.map(item => deepCopy(item));
-    if (obj instanceof Object) {
-        const copy = {};
-        for (let key in obj) {
-            if (obj.hasOwnProperty(key)) {
-                copy[key] = deepCopy(obj[key]);
-            }
-        }
-        return copy;
-    }
-}
-
-/**
- * 遅延実行（Promise）
- * @param {number} ms - 遅延時間（ミリ秒）
- * @returns {Promise} 遅延後に解決される Promise
- */
-function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-/**
- * オブジェクトのマージ
- * @param {object} target - マージ対象
- * @param {object} source - マージ元
- * @returns {object} マージされたオブジェクト
- */
-function mergeObjects(target, source) {
-    return { ...target, ...source };
-}
+  }
+  
+  /**
+   * Deep clone an object
+   * @param {object} obj - Object to clone
+   * @returns {object} - Cloned object
+   */
+  function deepClone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+  
+  /**
+   * Sum values in an object
+   * @param {object} obj - Object with numeric values
+   * @returns {number} - Sum of all values
+   */
+  function sumObjectValues(obj) {
+    return Object.values(obj).reduce((sum, val) => sum + val, 0);
+  }
+  
+  /**
+   * Check if object has any truthy values
+   * @param {object} obj - Object to check
+   * @returns {boolean} - True if has any truthy values
+   */
+  function hasAnyValue(obj) {
+    return Object.values(obj).some(val => val > 0);
+  }
+  

@@ -1,583 +1,420 @@
-// ゲーム状態
-const gameState = {
-    playerElements: {
+// Celestial Essence - Game Logic
+
+class CelestialEssenceGame {
+    constructor() {
+      this.reset();
+    }
+  
+    reset() {
+      // Initialize element pools
+      this.elementPool = {
+        light: GAME_CONFIG.initialPoolSize,
+        aqua: GAME_CONFIG.initialPoolSize,
+        wind: GAME_CONFIG.initialPoolSize,
+        fire: GAME_CONFIG.initialPoolSize,
+        dark: GAME_CONFIG.initialPoolSize
+      };
+  
+      // Initialize player stats
+      this.playerElements = {
         light: 0,
         aqua: 0,
         wind: 0,
         fire: 0,
         dark: 0
-    },
-    aether: 0,
-    poolElements: {
-        light: 5,
-        aqua: 5,
-        wind: 5,
-        fire: 5,
-        dark: 5,
-        aether: 0
-    },
-    score: 0,
-    purchasedCards: [],
-    reservedCards: [],
-    bonusElements: {
+      };
+  
+      this.playerAether = 0;
+      this.playerScore = 0;
+  
+      // Initialize cards
+      this.purchasedCards = [];
+      this.reservedCards = [];
+      this.tier1Cards = deepClone(TIER_CARDS.filter(c => c.tier === 1));
+      this.tier2Cards = deepClone(TIER_CARDS.filter(c => c.tier === 2));
+      this.tier3Cards = deepClone(TIER_CARDS.filter(c => c.tier === 3));
+  
+      // Element bonuses from purchased cards
+      this.elementBonuses = {
         light: 0,
         aqua: 0,
         wind: 0,
         fire: 0,
         dark: 0
-    },
-    maxReserved: 2,
-    targetScore: 15
-};
-
-const elementIcons = {
-    light: '🕯️',
-    aqua: '💧',
-    wind: '🌪️',
-    fire: '🔥',
-    dark: '⚫',
-    aether: '⭐'
-};
-
-const elementNames = {
-    light: 'ライト',
-    aqua: 'アクア',
-    wind: 'ウィンド',
-    fire: 'ファイア',
-    dark: 'ダーク',
-    aether: 'エーテル'
-};
-
-const cardTiers = {
-    basic: {
-        name: '初級',
-        minCost: 1,
-        maxCost: 1,
-        points: 1
-    },
-    intermediate: {
-        name: '中級',
-        minCost: 2,
-        maxCost: 3,
-        points: 3
-    },
-    advanced: {
-        name: '上級',
-        minCost: 4,
-        maxCost: 5,
-        points: 6
+      };
+  
+      this.selectedElements = [];
+      this.gameLog = [];
+      this.gameEnded = false;
+  
+      this.addLog('🎮 新しいゲームが開始されました！');
     }
-};
-
-let cards = {
-    basic: [],
-    intermediate: [],
-    advanced: []
-};
-
-// カード生成
-function generateCard(tier) {
-    const tierData = cardTiers[tier];
-    const cost = Math.floor(Math.random() * (tierData.maxCost - tierData.minCost + 1)) + tierData.minCost;
-    const elements = ['light', 'aqua', 'wind', 'fire', 'dark'];
-    const bonusElement = elements[Math.floor(Math.random() * elements.length)];
-    
-    const costElements = {};
-    for (let i = 0; i < cost; i++) {
-        const element = elements[Math.floor(Math.random() * elements.length)];
-        costElements[element] = (costElements[element] || 0) + 1;
+  
+    addLog(message) {
+      const timestamp = new Date().toLocaleTimeString('ja-JP');
+      this.gameLog.push(`[${timestamp}] ${message}`);
     }
-    
-    return {
-        id: Math.random(),
-        tier: tier,
-        cost: costElements,
-        points: tierData.points,
-        bonus: bonusElement,
-        title: `${tierData.name}の魔法 #${Math.floor(Math.random() * 100)}`
-    };
-}
-
-// 初期カード生成
-function initializeCards() {
-    cards.basic = Array(4).fill(null).map(() => generateCard('basic'));
-    cards.intermediate = Array(4).fill(null).map(() => generateCard('intermediate'));
-    cards.advanced = Array(4).fill(null).map(() => generateCard('advanced'));
-}
-
-// カード補充
-function refillCard(tier) {
-    while (cards[tier].length < 4) {
-        cards[tier].push(generateCard(tier));
-    }
-}
-
-// UI更新
-function updateUI() {
-    updateElementPools();
-    updatePlayerElements();
-    updateScore();
-    updateCards();
-    updatePurchasedCards();
-    updateReservedCards();
-    updateBonusElements();
-    updateButtonStates();
-}
-
-function updateElementPools() {
-    const container = document.getElementById('elementPools');
-    container.innerHTML = '';
-    
-    const elements = ['light', 'aqua', 'wind', 'fire', 'dark', 'aether'];
-    elements.forEach(elem => {
-        const pool = document.createElement('div');
-        pool.className = 'element-pool';
-        pool.innerHTML = `
-            <div class="element-icon">${elementIcons[elem]}</div>
-            <div class="element-name">${elementNames[elem]}</div>
-            <div class="element-count">${gameState.poolElements[elem]}</div>
-        `;
-        container.appendChild(pool);
-    });
-}
-
-function updatePlayerElements() {
-    const container = document.getElementById('playerElements');
-    container.innerHTML = '';
-    
-    const elements = ['light', 'aqua', 'wind', 'fire', 'dark'];
-    elements.forEach(elem => {
-        const item = document.createElement('div');
-        item.className = 'inventory-item';
-        item.innerHTML = `
-            <div class="element-icon">${elementIcons[elem]}</div>
-            <div class="element-count">${gameState.playerElements[elem]}</div>
-        `;
-        container.appendChild(item);
-    });
-    
-    document.getElementById('aetherDisplay').textContent = gameState.aether;
-}
-
-function updateScore() {
-    const scoreDisplay = document.getElementById('scoreDisplay');
-    scoreDisplay.textContent = gameState.score;
-    
-    const progress = (gameState.score / gameState.targetScore) * 100;
-    document.getElementById('scoreProgress').style.width = Math.min(progress, 100) + '%';
-}
-
-function updateCards() {
-    updateCardTier('basic', cards.basic);
-    updateCardTier('intermediate', cards.intermediate);
-    updateCardTier('advanced', cards.advanced);
-}
-
-function updateCardTier(tier, cardList) {
-    const container = document.getElementById('tier' + tier.charAt(0).toUpperCase() + tier.slice(1));
-    container.innerHTML = '';
-    
-    cardList.forEach(card => {
-        const cardEl = document.createElement('div');
-        cardEl.className = 'card';
-        
-        const costHtml = Object.entries(card.cost)
-            .map(([elem, count]) => `<div class="cost-item"><span class="element-icon">${elementIcons[elem]}</span>${count}</div>`)
-            .join('');
-        
-        const canPurchase = canBuyCard(card);
-        const canReserve = gameState.reservedCards.length < gameState.maxReserved;
-        
-        cardEl.innerHTML = `
-            <div class="card-header">
-                <div class="card-title">${card.title}</div>
-                <div class="card-points">+${card.points}pt</div>
-            </div>
-            <div class="card-cost">${costHtml}</div>
-            <div class="card-bonus">
-                <span class="element-icon">${elementIcons[card.bonus]}</span>
-                ボーナス
-            </div>
-            <div class="card-buttons">
-                <button class="btn-purchase" onclick="purchaseCard(${card.id})" ${!canPurchase ? 'disabled' : ''}>購入</button>
-                <button class="btn-reserve" onclick="reserveCard(${card.id})" ${!canReserve ? 'disabled' : ''}>予約</button>
-            </div>
-        `;
-        
-        container.appendChild(cardEl);
-    });
-}
-
-function updatePurchasedCards() {
-    const container = document.getElementById('purchasedCards');
-    container.innerHTML = '';
-    
-    if (gameState.purchasedCards.length === 0) {
-        container.innerHTML = '<div class="reserved-empty">まだカードを習得していません</div>';
-        return;
-    }
-    
-    gameState.purchasedCards.forEach(card => {
-        const cardEl = document.createElement('div');
-        cardEl.className = 'purchased-card';
-        cardEl.innerHTML = `
-            <div class="element-icon">${elementIcons[card.bonus]}</div>
-            <div class="card-points">+${card.points}pt</div>
-        `;
-        container.appendChild(cardEl);
-    });
-}
-
-function updateReservedCards() {
-    const container = document.getElementById('reservedCards');
-    container.innerHTML = '';
-    
-    if (gameState.reservedCards.length === 0) {
-        container.innerHTML = '<div class="reserved-empty">予約されたカードはありません</div>';
-        return;
-    }
-    
-    gameState.reservedCards.forEach(card => {
-        const cardEl = document.createElement('div');
-        cardEl.className = 'reserved-card';
-        
-        const costHtml = Object.entries(card.cost)
-            .map(([elem, count]) => `<div class="cost-item"><span class="element-icon">${elementIcons[elem]}</span>${count}</div>`)
-            .join('');
-        
-        const canPurchase = canBuyCard(card);
-        
-        cardEl.innerHTML = `
-            <div class="card-header">
-                <div class="card-title">${card.title}</div>
-                <div class="card-points">+${card.points}pt</div>
-            </div>
-            <div class="card-cost">${costHtml}</div>
-            <div class="card-bonus">
-                <span class="element-icon">${elementIcons[card.bonus]}</span>
-                ボーナス
-            </div>
-            <div class="card-buttons">
-                <button class="btn-purchase" onclick="purchaseReservedCard(${card.id})" ${!canPurchase ? 'disabled' : ''}>購入</button>
-            </div>
-        `;
-        
-        container.appendChild(cardEl);
-    });
-}
-
-function updateBonusElements() {
-    const container = document.getElementById('bonusElements');
-    container.innerHTML = '';
-    
-    const elements = ['light', 'aqua', 'wind', 'fire', 'dark'];
-    let hasBonus = false;
-    
-    elements.forEach(elem => {
-        if (gameState.bonusElements[elem] > 0) {
-            hasBonus = true;
-            const item = document.createElement('div');
-            item.className = 'bonus-item';
-            item.innerHTML = `
-                <div class="element-icon">${elementIcons[elem]}</div>
-                <div>${gameState.bonusElements[elem]}</div>
-            `;
-            container.appendChild(item);
+  
+    // Take 3 different elements
+    takeThreeDifferentElements(elements) {
+      // Check if we have 3 different elements
+      if (elements.length !== 3 || new Set(elements).size !== 3) {
+        this.addLog('❌ 異なる3種類のエレメントを選んでください');
+        return false;
+      }
+  
+      // Check if available
+      for (let elem of elements) {
+        if (this.elementPool[elem] <= 0) {
+          this.addLog(`❌ ${elem} が不足しています`);
+          return false;
         }
-    });
-    
-    if (!hasBonus) {
-        container.innerHTML = '<div style="color: #666; text-align: center;">ボーナスなし</div>';
+      }
+  
+      // Take elements
+      for (let elem of elements) {
+        this.elementPool[elem]--;
+        this.playerElements[elem]++;
+      }
+  
+      this.addLog(`✨ 異なる3種類を取得: ${elements.map(e => `${ELEMENT_ICONS[e]}${e}`).join(', ')}`);
+      return true;
     }
-}
-
-function updateButtonStates() {
-    const differentBtn = document.getElementById('takeDifferentBtn');
-    const availableElements = Object.values(gameState.poolElements)
-        .filter((count, i) => i < 5 && count > 0).length;
-    differentBtn.disabled = availableElements < 3;
-}
-
-// ゲームロジック
-function takeDifferentElements() {
-    const elements = ['light', 'aqua', 'wind', 'fire', 'dark']
-        .filter(elem => gameState.poolElements[elem] > 0);
-    
-    if (elements.length < 3) {
-        logAction('異なる3つのエレメントが選べません');
-        return;
+  
+    // Take 2 same elements
+    takeTwoSameElements(element) {
+      if (this.elementPool[element] < GAME_CONFIG.minPoolToTakePair) {
+        this.addLog(`❌ ${element} は${GAME_CONFIG.minPoolToTakePair}個以上必要です`);
+        return false;
+      }
+  
+      this.elementPool[element] -= 2;
+      this.playerElements[element] += 2;
+  
+      this.addLog(`✨ 同じエレメント2個を取得: ${ELEMENT_ICONS[element]}${element}`);
+      return true;
     }
-    
-    const selected = [];
-    const available = [...elements];
-    
-    for (let i = 0; i < 3; i++) {
-        const randomIndex = Math.floor(Math.random() * available.length);
-        const elem = available[randomIndex];
-        selected.push(elem);
-        available.splice(randomIndex, 1);
+  
+    // Reserve a card and get aether
+    reserveCard(tier, cardIndex) {
+      if (this.reservedCards.length >= GAME_CONFIG.maxReservedCards) {
+        this.addLog(`❌ 予約は最大${GAME_CONFIG.maxReservedCards}枚までです`);
+        return false;
+      }
+  
+      let deck;
+      if (tier === 1) deck = this.tier1Cards;
+      else if (tier === 2) deck = this.tier2Cards;
+      else deck = this.tier3Cards;
+  
+      if (cardIndex >= deck.length) return false;
+  
+      const card = deck.splice(cardIndex, 1)[0];
+      this.reservedCards.push(card);
+      this.playerAether++;
+  
+      this.addLog(`📜 魔法カードを予約: ${card.name} (エーテル+1)`);
+      return true;
     }
-    
-    selected.forEach(elem => {
-        gameState.playerElements[elem]++;
-        gameState.poolElements[elem]--;
-    });
-    
-    logAction(`異なる3つを取得: ${selected.map(e => elementNames[e]).join(', ')}`);
-    updateUI();
-}
-
-function showSameElementDropdown() {
-    const dropdown = document.getElementById('sameElementDropdown');
-    const select = document.getElementById('sameElementSelect');
-    const elements = ['light', 'aqua', 'wind', 'fire', 'dark'];
-    
-    select.innerHTML = '<option value="">属性を選択...</option>';
-    
-    elements.forEach(elem => {
-        if (gameState.poolElements[elem] >= 4) {
-            const option = document.createElement('option');
-            option.value = elem;
-            option.textContent = `${elementNames[elem]} (${gameState.poolElements[elem]}個)`;
-            select.appendChild(option);
+  
+    // Purchase a card
+    purchaseCard(tier, cardIndex, isReserved = false) {
+      let deck;
+      if (tier === 1) deck = this.tier1Cards;
+      else if (tier === 2) deck = this.tier2Cards;
+      else deck = this.tier3Cards;
+  
+      const card = deck[cardIndex];
+      if (!card) return false;
+  
+      // Check if can afford
+      if (!this.canAfford(card.cost)) {
+        this.addLog(`❌ エレメントが足りません`);
+        return false;
+      }
+  
+      // Consume elements
+      this.consumeElements(card.cost);
+  
+      // Remove from deck or reserved
+      if (isReserved) {
+        const reservedIndex = this.reservedCards.indexOf(card);
+        if (reservedIndex > -1) {
+          this.reservedCards.splice(reservedIndex, 1);
         }
-    });
-    
-    dropdown.style.display = 'block';
-}
-
-function takeSameElements() {
-    const select = document.getElementById('sameElementSelect');
-    const elem = select.value;
-    
-    if (!elem || gameState.poolElements[elem] < 4) return;
-    
-    gameState.playerElements[elem] += 2;
-    gameState.poolElements[elem] -= 2;
-    
-    select.value = '';
-    document.getElementById('sameElementDropdown').style.display = 'none';
-    
-    logAction(`${elementNames[elem]} 2つを取得`);
-    updateUI();
-}
-
-function canBuyCard(card) {
-    let needed = { ...card.cost };
-    const playerElems = { ...gameState.playerElements };
-    const bonus = { ...gameState.bonusElements };
-    let aether = gameState.aether;
-    
-    // ボーナスで割引
-    for (let elem in needed) {
-        const discount = Math.min(needed[elem], bonus[elem]);
-        needed[elem] -= discount;
+      } else {
+        deck.splice(cardIndex, 1);
+      }
+  
+      // Add to purchased
+      this.purchasedCards.push(card);
+      this.playerScore += card.points;
+      this.elementBonuses[card.bonus]++;
+  
+      this.addLog(`🏆 魔法カード購入: ${card.name} (ポイント+${card.points}, ${ELEMENT_ICONS[card.bonus]}ボーナス)`);
+  
+      // Refill deck
+      if (tier === 1 && this.tier1Cards.length < 3) this.refillDeck(1);
+      if (tier === 2 && this.tier2Cards.length < 3) this.refillDeck(2);
+      if (tier === 3 && this.tier3Cards.length < 3) this.refillDeck(3);
+  
+      // Check if game ended
+      if (isGameEnd(this.playerScore, GAME_CONFIG.targetScore)) {
+        this.gameEnded = true;
+        this.addLog(`🎉 ゲーム終了！最終スコア: ${this.playerScore}点`);
+      }
+  
+      return true;
     }
-    
-    // プレイヤーのエレメントで支払い
-    for (let elem in needed) {
-        if (playerElems[elem] >= needed[elem]) {
-            playerElems[elem] -= needed[elem];
-            needed[elem] = 0;
+  
+    canAfford(cost) {
+      // Check with bonuses and aether
+      let elementsNeeded = deepClone(cost);
+  
+      // Apply bonuses
+      for (let elem in elementsNeeded) {
+        elementsNeeded[elem] = Math.max(0, elementsNeeded[elem] - this.elementBonuses[elem]);
+      }
+  
+      // Check if we have enough
+      for (let elem in elementsNeeded) {
+        const available = this.playerElements[elem] + this.playerAether;
+        if (available < elementsNeeded[elem]) {
+          return false;
+        }
+      }
+  
+      return true;
+    }
+  
+    consumeElements(cost) {
+      let elementsToConsume = deepClone(cost);
+  
+      // Apply bonuses first
+      for (let elem in elementsToConsume) {
+        const bonus = Math.min(elementsToConsume[elem], this.elementBonuses[elem]);
+        elementsToConsume[elem] -= bonus;
+      }
+  
+      // Use aether for remaining
+      let aetherNeeded = 0;
+      for (let elem in elementsToConsume) {
+        const available = this.playerElements[elem];
+        const needed = elementsToConsume[elem];
+  
+        if (available >= needed) {
+          this.playerElements[elem] -= needed;
         } else {
-            needed[elem] -= playerElems[elem];
-            playerElems[elem] = 0;
+          this.playerElements[elem] = 0;
+          aetherNeeded += needed - available;
         }
+      }
+  
+      this.playerAether -= aetherNeeded;
     }
-    
-    // 残りをエーテルで支払い
-    let totalNeeded = Object.values(needed).reduce((a, b) => a + b, 0);
-    return aether >= totalNeeded;
-}
-
-function purchaseCard(cardId) {
-    let card = null;
-    let tier = null;
-    
-    for (let t in cards) {
-        const found = cards[t].find(c => c.id === cardId);
-        if (found) {
-            card = found;
-            tier = t;
-            break;
-        }
+  
+    refillDeck(tier) {
+      // In this simplified version, we just show a message
+      // In a full implementation, you'd generate or draw new cards
     }
-    
-    if (!card || !canBuyCard(card)) return;
-    
-    // エレメント消費
-    let needed = { ...card.cost };
-    const bonus = { ...gameState.bonusElements };
-    
-    // ボーナスで割引
-    for (let elem in needed) {
-        const discount = Math.min(needed[elem], bonus[elem]);
-        needed[elem] -= discount;
+  }
+  
+  const game = new CelestialEssenceGame();
+  
+  // UI Update Functions
+  function updateUI() {
+    // Update element pools
+    const poolHTML = Object.entries(game.elementPool)
+      .map(([elem, count]) => {
+        const isDisabled = count < GAME_CONFIG.minPoolToTakePair;
+        return `<div class="element-display ${isDisabled ? 'disabled' : ''}">${ELEMENT_ICONS[elem]}<span class="count">${count}</span></div>`;
+      })
+      .join('');
+    document.getElementById('element-pool').innerHTML = poolHTML;
+  
+    // Update player elements
+    const playerHTML = Object.entries(game.playerElements)
+      .map(([elem, count]) => `<div class="element-display">${ELEMENT_ICONS[elem]}<span class="count">${count}</span></div>`)
+      .join('');
+    document.getElementById('player-elements').innerHTML = playerHTML;
+  
+    // Update aether
+    document.getElementById('aether-count').textContent = game.playerAether;
+  
+    // Update bonuses
+    const bonusHTML = Object.entries(game.elementBonuses)
+      .filter(([_, count]) => count > 0)
+      .map(([elem, count]) => `<div class="bonus-display">${ELEMENT_ICONS[elem]} <span class="count">+${count}</span></div>`)
+      .join('');
+    document.getElementById('element-bonuses').innerHTML = bonusHTML || '<span class="empty">ボーナスなし</span>';
+  
+    // Update purchased cards
+    updateCardGrid();
+  
+    // Update reserved cards
+    updateReservedCards();
+  
+    // Update score
+    document.getElementById('current-score').textContent = formatScore(game.playerScore);
+    const progressPercent = (game.playerScore / GAME_CONFIG.targetScore) * 100;
+    document.getElementById('score-bar').style.width = Math.min(progressPercent, 100) + '%';
+  
+    // Update game log
+    const logHTML = game.gameLog.map(log => `<div class="log-entry">${log}</div>`).join('');
+    const logContainer = document.getElementById('game-log');
+    logContainer.innerHTML = logHTML;
+    logContainer.scrollTop = logContainer.scrollHeight;
+  
+    // Check game end
+    if (game.gameEnded) {
+      document.getElementById('game-status').innerHTML = `<div class="game-end-message">🎉 ゲーム終了！<br>最終スコア: ${game.playerScore}点</div>`;
+      document.querySelectorAll('.action-button').forEach(btn => btn.disabled = true);
     }
-    
-    // プレイヤーのエレメントで支払い
-    for (let elem in needed) {
-        const payment = Math.min(gameState.playerElements[elem], needed[elem]);
-        gameState.playerElements[elem] -= payment;
-        needed[elem] -= payment;
-    }
-    
-    // 残りをエーテルで支払い
-    let totalNeeded = Object.values(needed).reduce((a, b) => a + b, 0);
-    gameState.aether -= totalNeeded;
-    
-    // カード購入
-    gameState.purchasedCards.push(card);
-    gameState.score += card.points;
-    gameState.bonusElements[card.bonus]++;
-    
-    // カード削除
-    cards[tier] = cards[tier].filter(c => c.id !== cardId);
-    refillCard(tier);
-    
-    logAction(`『${card.title}』を習得 (+${card.points}pt)`);
-    
-    // ゲーム終了判定
-    if (isGameEnd(gameState.score, gameState.targetScore)) {
-        logAction(`🎉 ${gameState.targetScore}点に到達！ゲーム終了！`);
-        disableAllButtons();
-    }
-    
-    updateUI();
-}
-
-function purchaseReservedCard(cardId) {
-    const cardIndex = gameState.reservedCards.findIndex(c => c.id === cardId);
-    if (cardIndex === -1) return;
-    
-    const card = gameState.reservedCards[cardIndex];
-    if (!canBuyCard(card)) return;
-    
-    // エレメント消費（上記と同じ処理）
-    let needed = { ...card.cost };
-    const bonus = { ...gameState.bonusElements };
-    
-    for (let elem in needed) {
-        const discount = Math.min(needed[elem], bonus[elem]);
-        needed[elem] -= discount;
-    }
-    
-    for (let elem in needed) {
-        const payment = Math.min(gameState.playerElements[elem], needed[elem]);
-        gameState.playerElements[elem] -= payment;
-        needed[elem] -= payment;
-    }
-    
-    let totalNeeded = Object.values(needed).reduce((a, b) => a + b, 0);
-    gameState.aether -= totalNeeded;
-    
-    gameState.purchasedCards.push(card);
-    gameState.score += card.points;
-    gameState.bonusElements[card.bonus]++;
-    gameState.reservedCards.splice(cardIndex, 1);
-    
-    logAction(`『${card.title}』を習得 (+${card.points}pt)`);
-    
-    if (isGameEnd(gameState.score, gameState.targetScore)) {
-        logAction(`🎉 ${gameState.targetScore}点に到達！ゲーム終了！`);
-        disableAllButtons();
-    }
-    
-    updateUI();
-}
-
-function reserveCard(cardId) {
-    if (gameState.reservedCards.length >= gameState.maxReserved) {
-        logAction('予約カードが満杯です');
-        return;
-    }
-    
-    let card = null;
-    let tier = null;
-    
-    for (let t in cards) {
-        const found = cards[t].find(c => c.id === cardId);
-        if (found) {
-            card = found;
-            tier = t;
-            break;
-        }
-    }
-    
-    if (!card) return;
-    
-    gameState.reservedCards.push(card);
-    gameState.aether++;
-    cards[tier] = cards[tier].filter(c => c.id !== cardId);
-    refillCard(tier);
-    
-    logAction(`『${card.title}』を予約 (エーテル +1)`);
-    updateUI();
-}
-
-function disableAllButtons() {
-    document.querySelectorAll('.btn, .btn-purchase, .btn-reserve').forEach(btn => {
-        btn.disabled = true;
-    });
-}
-
-function autoPlay() {
-    const actions = [
-        () => takeDifferentElements(),
-        () => {
-            const elems = ['light', 'aqua', 'wind', 'fire', 'dark'].filter(e => gameState.poolElements[e] >= 4);
-            if (elems.length > 0) {
-                const select = document.getElementById('sameElementSelect');
-                select.value = elems[Math.floor(Math.random() * elems.length)];
-                takeSameElements();
-            }
-        },
-        () => {
-            const allCards = [...cards.basic, ...cards.intermediate, ...cards.advanced];
-            const buyable = allCards.filter(c => canBuyCard(c));
-            if (buyable.length > 0) {
-                purchaseCard(buyable[Math.floor(Math.random() * buyable.length)].id);
-            }
-        },
-        () => {
-            if (gameState.reservedCards.length < gameState.maxReserved) {
-                const allCards = [...cards.basic, ...cards.intermediate, ...cards.advanced];
-                if (allCards.length > 0) {
-                    reserveCard(allCards[Math.floor(Math.random() * allCards.length)].id);
-                }
-            }
-        }
+  }
+  
+  function updateCardGrid() {
+    const tiers = [
+      { tier: 1, deck: game.tier1Cards, name: '初級' },
+      { tier: 2, deck: game.tier2Cards, name: '中級' },
+      { tier: 3, deck: game.tier3Cards, name: '上級' }
     ];
-    
-    actions[Math.floor(Math.random() * actions.length)]();
-}
-
-function newGame() {
-    gameState.playerElements = { light: 0, aqua: 0, wind: 0, fire: 0, dark: 0 };
-    gameState.aether = 0;
-    gameState.poolElements = { light: 5, aqua: 5, wind: 5, fire: 5, dark: 5, aether: 0 };
-    gameState.score = 0;
-    gameState.purchasedCards = [];
-    gameState.reservedCards = [];
-    gameState.bonusElements = { light: 0, aqua: 0, wind: 0, fire: 0, dark: 0 };
-    
-    document.getElementById('gameLog').innerHTML = '';
-    initializeCards();
+  
+    tiers.forEach(({ tier, deck, name }) => {
+      const column = document.getElementById(`tier${tier}-column`);
+      const html = deck.map((card, idx) => `
+        <div class="card">
+          <div class="card-header">${card.name}</div>
+          <div class="card-content">
+            <div class="card-cost">${Object.entries(card.cost).map(([elem, count]) => `${ELEMENT_ICONS[elem]}×${count}`).join(' ')}</div>
+            <div class="card-bonus">ボーナス: ${ELEMENT_ICONS[card.bonus]}</div>
+            <div class="card-points">⭐ ${card.points}pt</div>
+          </div>
+          <div class="card-actions">
+            <button class="card-btn purchase-btn" onclick="purchaseCard(${tier}, ${idx})">購入</button>
+            <button class="card-btn reserve-btn" onclick="reserveCard(${tier}, ${idx})">予約</button>
+          </div>
+        </div>
+      `).join('');
+      column.innerHTML = html;
+    });
+  
+    // Update purchased cards
+    const purchasedHTML = game.purchasedCards.map(card => `
+      <div class="purchased-card">
+        <div class="card-name">${card.name}</div>
+        <div class="card-bonus-small">${ELEMENT_ICONS[card.bonus]}</div>
+      </div>
+    `).join('');
+    document.getElementById('purchased-cards').innerHTML = purchasedHTML || '<span class="empty">購入カードなし</span>';
+  }
+  
+  function updateReservedCards() {
+    const html = game.reservedCards.map((card, idx) => `
+      <div class="card">
+        <div class="card-header">📜 ${card.name}</div>
+        <div class="card-content">
+          <div class="card-cost">${Object.entries(card.cost).map(([elem, count]) => `${ELEMENT_ICONS[elem]}×${count}`).join(' ')}</div>
+          <div class="card-bonus">ボーナス: ${ELEMENT_ICONS[card.bonus]}</div>
+          <div class="card-points">⭐ ${card.points}pt</div>
+        </div>
+        <button class="card-btn purchase-btn" onclick="purchaseReservedCard(${idx})">購入</button>
+      </div>
+    `).join('');
+    document.getElementById('reserved-cards').innerHTML = html || '<span class="empty">予約カードなし</span>';
+  }
+  
+  // Action Functions
+  function takeThreeDifferent() {
+    const checkboxes = Array.from(document.querySelectorAll('.element-checkbox:checked'));
+    if (checkboxes.length !== 3) {
+      alert('異なる3種類のエレメントを選んでください');
+      return;
+    }
+  
+    const elements = checkboxes.map(cb => cb.value);
+    game.takeThreeDifferentElements(elements);
     updateUI();
-    logAction('🎮 新しいゲームを開始しました');
-}
-
-function logAction(action) {
-    const logEl = document.getElementById('gameLog');
-    const entry = document.createElement('div');
-    entry.className = 'log-entry';
-    const time = new Date().toLocaleTimeString('ja-JP');
-    entry.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-action">${action}</span>`;
-    logEl.appendChild(entry);
-    logEl.scrollTop = logEl.scrollHeight;
-}
-
-// 初期化
-initializeCards();
-logAction('🎮 至高の存在へようこそ');
-updateUI();
+  }
+  
+  function takeTwoSame() {
+    const select = document.getElementById('two-same-select');
+    const element = select.value;
+  
+    if (!element) {
+      alert('エレメントを選んでください');
+      return;
+    }
+  
+    if (game.elementPool[element] < GAME_CONFIG.minPoolToTakePair) {
+      alert(`${element} は${GAME_CONFIG.minPoolToTakePair}個以上必要です`);
+      return;
+    }
+  
+    game.takeTwoSameElements(element);
+    select.value = '';
+    updateUI();
+  }
+  
+  function purchaseCard(tier, cardIndex) {
+    game.purchaseCard(tier, cardIndex, false);
+    updateUI();
+  }
+  
+  function purchaseReservedCard(cardIndex) {
+    const card = game.reservedCards[cardIndex];
+    const tierIndex = game[`tier${card.tier}Cards`].findIndex(c => c.id === card.id);
+    game.purchaseCard(card.tier, tierIndex, true);
+    updateUI();
+  }
+  
+  function reserveCard(tier, cardIndex) {
+    game.reserveCard(tier, cardIndex);
+    updateUI();
+  }
+  
+  function autoPlay() {
+    if (game.gameEnded) {
+      alert('ゲームは終了しています');
+      return;
+    }
+  
+    const action = Math.random();
+  
+    if (action < 0.5) {
+      // Random three different
+      const elements = ['light', 'aqua', 'wind', 'fire', 'dark'];
+      const shuffled = elements.sort(() => Math.random() - 0.5);
+      const available = shuffled.filter(e => game.elementPool[e] > 0);
+  
+      if (available.length >= 3) {
+        game.takeThreeDifferentElements(available.slice(0, 3));
+      }
+    } else {
+      // Random purchase
+      const allCards = [
+        ...game.tier1Cards.map(c => ({ tier: 1, card: c })),
+        ...game.tier2Cards.map(c => ({ tier: 2, card: c })),
+        ...game.tier3Cards.map(c => ({ tier: 3, card: c }))
+      ];
+  
+      if (allCards.length > 0) {
+        const { tier, card } = getRandomFromArray(allCards);
+        const idx = game[`tier${tier}Cards`].indexOf(card);
+        game.purchaseCard(tier, idx, false);
+      }
+    }
+  
+    updateUI();
+  }
+  
+  function newGame() {
+    game.reset();
+    document.getElementById('two-same-select').value = '';
+    updateUI();
+  }
+  
+  // Initialize game
+  window.addEventListener('load', () => {
+    updateUI();
+  });
+  
