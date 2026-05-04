@@ -1,144 +1,220 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Celestial Essence</title>
-  <link rel="stylesheet" href="elemental-style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>celestial-essence</title>
+    <link rel="stylesheet" href="elemental-style.css">
 </head>
 <body>
-  <div class="page-background"></div>
-  <div class="magic-pattern"></div>
+    <div class="container">
+        <h1 class="title">celestial-essence</h1>
+        
+        <div class="game-board">
+            <!-- スコア表示 -->
+            <div class="score-section">
+                <div class="score-display">
+                    <div class="current-score">
+                        <span>現在のポイント:</span>
+                        <span id="currentScore" class="score-number">0</span>
+                        <span>/15</span>
+                    </div>
+                    <div class="score-bar">
+                        <div class="score-progress" id="scoreProgress" style="width: 0%;"></div>
+                    </div>
+                </div>
+                <button id="gameStatus" class="game-status-btn">ゲーム進行中...</button>
+            </div>
 
-  <div class="container">
-    <!-- Header -->
-    <header class="game-header">
-      <h1>✨ Celestial Essence ✨</h1>
-      <p class="subtitle">至高の存在</p>
-    </header>
+            <!-- エレメントプール -->
+            <div class="pools-section">
+                <h2>エレメントプール</h2>
+                <div class="pools-grid">
+                    <div class="pool light-pool">
+                        <div class="pool-icon">🕯️</div>
+                        <div class="pool-name">ライト</div>
+                        <div class="pool-count" id="lightPool">5</div>
+                    </div>
+                    <div class="pool aqua-pool">
+                        <div class="pool-icon">💧</div>
+                        <div class="pool-name">アクア</div>
+                        <div class="pool-count" id="aquaPool">5</div>
+                    </div>
+                    <div class="pool wind-pool">
+                        <div class="pool-icon">🌪️</div>
+                        <div class="pool-name">ウィンド</div>
+                        <div class="pool-count" id="windPool">5</div>
+                    </div>
+                    <div class="pool fire-pool">
+                        <div class="pool-icon">🔥</div>
+                        <div class="pool-name">ファイア</div>
+                        <div class="pool-count" id="firePool">5</div>
+                    </div>
+                    <div class="pool dark-pool">
+                        <div class="pool-icon">⚫</div>
+                        <div class="pool-name">ダーク</div>
+                        <div class="pool-count" id="darkPool">5</div>
+                    </div>
+                </div>
+            </div>
 
-    <!-- Score Section -->
-    <section class="score-section">
-      <div class="score-display">
-        <div class="score-label">スコア</div>
-        <div class="score-value" id="current-score">00</div>
-        <div class="score-target">/ 15</div>
-      </div>
-      <div class="score-bar-container">
-        <div class="score-bar" id="score-bar"></div>
-      </div>
-      <div id="game-status"></div>
-    </section>
+            <!-- プレイヤーエレメント -->
+            <div class="player-section">
+                <div class="player-info">
+                    <h2>プレイヤーのエレメント</h2>
+                    <div class="elements-display">
+                        <div class="element light-element">
+                            <span class="element-icon">🕯️</span>
+                            <span id="playerLight" class="element-count">0</span>
+                        </div>
+                        <div class="element aqua-element">
+                            <span class="element-icon">💧</span>
+                            <span id="playerAqua" class="element-count">0</span>
+                        </div>
+                        <div class="element wind-element">
+                            <span class="element-icon">🌪️</span>
+                            <span id="playerWind" class="element-count">0</span>
+                        </div>
+                        <div class="element fire-element">
+                            <span class="element-icon">🔥</span>
+                            <span id="playerFire" class="element-count">0</span>
+                        </div>
+                        <div class="element dark-element">
+                            <span class="element-icon">⚫</span>
+                            <span id="playerDark" class="element-count">0</span>
+                        </div>
+                        <div class="element aether-element">
+                            <span class="element-icon">⭐</span>
+                            <span id="playerAether" class="element-count">0</span>
+                        </div>
+                    </div>
+                </div>
 
-    <!-- Main Game Area -->
-    <div class="game-area">
-      <!-- Left Column: Element Management -->
-      <section class="element-section">
-        <h2>🌍 属性</h2>
+                <div class="generated-elements">
+                    <h3>カードから発生するエレメント</h3>
+                    <div class="generated-display">
+                        <div class="gen-element light-element">
+                            <span class="element-icon">🕯️</span>
+                            <span id="generatedLight" class="element-count">0</span>
+                        </div>
+                        <div class="gen-element aqua-element">
+                            <span class="element-icon">💧</span>
+                            <span id="generatedAqua" class="element-count">0</span>
+                        </div>
+                        <div class="gen-element wind-element">
+                            <span class="element-icon">🌪️</span>
+                            <span id="generatedWind" class="element-count">0</span>
+                        </div>
+                        <div class="gen-element fire-element">
+                            <span class="element-icon">🔥</span>
+                            <span id="generatedFire" class="element-count">0</span>
+                        </div>
+                        <div class="gen-element dark-element">
+                            <span class="element-icon">⚫</span>
+                            <span id="generatedDark" class="element-count">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        <!-- Element Pool -->
-        <div class="subsection">
-          <h3>属性プール</h3>
-          <div id="element-pool" class="element-grid"></div>
+            <!-- アクションボタン -->
+            <div class="actions-section">
+                <h2>アクション</h2>
+                <div class="action-buttons">
+                    <button id="takeDifferent" class="action-btn">異なる3つを取得</button>
+                    <button id="takeSame" class="action-btn">同じ属性2つを取得</button>
+                    <button id="autoPlay" class="action-btn auto-play">自動プレイ</button>
+                    <button id="newGame" class="action-btn new-game">新規ゲーム</button>
+                </div>
+
+                <!-- 異なる3つ選択UI -->
+                <div id="differentUI" class="action-ui" style="display: none;">
+                    <h3>異なる3つのエレメントを選択</h3>
+                    <div class="selection-grid">
+                        <label class="selection-checkbox">
+                            <input type="checkbox" value="light" class="different-checkbox">
+                            <span class="checkbox-label">🕯️ ライト</span>
+                        </label>
+                        <label class="selection-checkbox">
+                            <input type="checkbox" value="aqua" class="different-checkbox">
+                            <span class="checkbox-label">💧 アクア</span>
+                        </label>
+                        <label class="selection-checkbox">
+                            <input type="checkbox" value="wind" class="different-checkbox">
+                            <span class="checkbox-label">🌪️ ウィンド</span>
+                        </label>
+                        <label class="selection-checkbox">
+                            <input type="checkbox" value="fire" class="different-checkbox">
+                            <span class="checkbox-label">🔥 ファイア</span>
+                        </label>
+                        <label class="selection-checkbox">
+                            <input type="checkbox" value="dark" class="different-checkbox">
+                            <span class="checkbox-label">⚫ ダーク</span>
+                        </label>
+                    </div>
+                    <button class="confirm-btn" id="confirmDifferent">確定</button>
+                    <button class="cancel-btn" id="cancelDifferent">キャンセル</button>
+                </div>
+
+                <!-- 同じ属性2つ選択UI -->
+                <div id="sameUI" class="action-ui" style="display: none;">
+                    <h3>同じエレメント2つを選択</h3>
+                    <select id="sameSelect" class="selection-dropdown">
+                        <option value="">属性を選択...</option>
+                    </select>
+                    <button class="confirm-btn" id="confirmSame">確定</button>
+                    <button class="cancel-btn" id="cancelSame">キャンセル</button>
+                </div>
+            </div>
+
+            <!-- 魔法カード展示 -->
+            <div class="cards-section">
+                <h2>魔法カード</h2>
+                <div class="cards-container">
+                    <!-- 初級カード -->
+                    <div class="tier-column tier-1">
+                        <h3>初級の魔法</h3>
+                        <div id="tier1Cards" class="cards-list"></div>
+                    </div>
+                    <!-- 中級カード -->
+                    <div class="tier-column tier-2">
+                        <h3>中級の魔法</h3>
+                        <div id="tier2Cards" class="cards-list"></div>
+                    </div>
+                    <!-- 上級カード -->
+                    <div class="tier-column tier-3">
+                        <h3>上級の魔法</h3>
+                        <div id="tier3Cards" class="cards-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 予約カード -->
+            <div class="reserved-section">
+                <h2>予約カード（最大2枚）</h2>
+                <div class="reserved-cards" id="reservedCards">
+                    <div class="no-reserved">予約カードなし</div>
+                </div>
+            </div>
+
+            <!-- 購入カード -->
+            <div class="purchased-section">
+                <h2>購入済みカード</h2>
+                <div class="purchased-cards" id="purchasedCards">
+                    <div class="no-purchased">購入済みカードなし</div>
+                </div>
+            </div>
+
+            <!-- ゲームログ -->
+            <div class="log-section">
+                <h2>ゲームログ</h2>
+                <div class="log-container" id="gameLog">
+                    <div class="log-entry">ゲーム開始</div>
+                </div>
+            </div>
         </div>
-
-        <!-- Player Elements -->
-        <div class="subsection">
-          <h3>所有属性</h3>
-          <div id="player-elements" class="element-grid"></div>
-        </div>
-
-        <!-- Element Bonuses -->
-        <div class="subsection">
-          <h3>属性ボーナス</h3>
-          <div id="element-bonuses" class="element-grid"></div>
-        </div>
-
-        <!-- Aether Display -->
-        <div class="subsection">
-          <h3>エーテル（源）</h3>
-          <div class="aether-display">
-            <span class="aether-icon">⭐</span>
-            <span class="aether-count" id="aether-count">0</span>
-          </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="action-section">
-          <h3>アクション</h3>
-
-          <!-- Take Three Different -->
-          <button class="action-button" id="take-three-btn" onclick="takeThreeDifferent()">
-            異なる3つの属性を取得
-          </button>
-
-          <!-- Take Two Same -->
-          <div class="two-same-container">
-            <label for="two-same-select">同じ属性2つを取得:</label>
-            <select id="two-same-select" class="element-select">
-              <option value="">属性を選択</option>
-              <option value="light">🕯️ ライト</option>
-              <option value="aqua">💧 アクア</option>
-              <option value="wind">🌪️ ウィンド</option>
-              <option value="fire">🔥 ファイア</option>
-              <option value="dark">⚫ ダーク</option>
-            </select>
-            <button class="action-button" onclick="takeTwoSame()">取得</button>
-          </div>
-
-          <!-- Game Control Buttons -->
-          <button class="action-button secondary" onclick="autoPlay()">自動プレイ</button>
-          <button class="action-button secondary" onclick="newGame()">新規ゲーム</button>
-        </div>
-      </section>
-
-      <!-- Middle Column: Card Management -->
-      <section class="card-section">
-        <h2>🎴 魔法カード</h2>
-
-        <!-- Tier Columns -->
-        <div class="tier-grid">
-          <div class="tier-column">
-            <h3>初級</h3>
-            <div id="tier1-column" class="card-column"></div>
-          </div>
-          <div class="tier-column">
-            <h3>中級</h3>
-            <div id="tier2-column" class="card-column"></div>
-          </div>
-          <div class="tier-column">
-            <h3>上級</h3>
-            <div id="tier3-column" class="card-column"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Right Column: Purchased & Reserved Cards -->
-      <section class="card-management-section">
-        <!-- Purchased Cards -->
-        <div class="subsection">
-          <h2>📚 購入済みカード</h2>
-          <div id="purchased-cards" class="card-list"></div>
-        </div>
-
-        <!-- Reserved Cards -->
-        <div class="subsection">
-          <h2>📜 予約済みカード</h2>
-          <div id="reserved-cards" class="reserved-list"></div>
-        </div>
-      </section>
     </div>
 
-    <!-- Game Log -->
-    <section class="log-section">
-      <h2>📋 ゲームログ</h2>
-      <div id="game-log" class="game-log"></div>
-    </section>
-  </div>
-
-  <!-- Scripts -->
-  <script src="games-common.js"></script>
-  <script src="tier_Card_Consts.js"></script>
-  <script src="elemental-script.js"></script>
+    <script src="elemental-script.js"></script>
 </body>
 </html>
