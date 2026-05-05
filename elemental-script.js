@@ -203,8 +203,8 @@ function createCardElement(card, tier) {
       </div>
       <div class="card-bonus">ボーナス: ${elementMap[card.bonus]}</div>
       <div class="card-buttons">
-          <button class="card-btn purchase-btn" ${!canPurchase ? 'disabled' : ''}>購入</button>
-          <button class="card-btn reserve-btn" ${!canReserve ? 'disabled' : ''}>予約</button>
+          <button class="card-btn purchase-btn" id="purchase-btn" ${!canPurchase ? 'disabled' : ''}>購入</button>
+          <button class="card-btn reserve-btn" id="reserve-btn" ${!canReserve ? 'disabled' : ''}>予約</button>
       </div>
   `;
 
@@ -292,7 +292,8 @@ function reserveCard(card, tier) {
       addLog('予約できるカードは最大2枚です', 'info');
       return;
   }
-
+  alert('アラートのメッセージ');
+  
   gameState.reservedCards.push({ ...card, tier });
   gameState.player.aether++;
 
@@ -539,25 +540,7 @@ document.getElementById('autoPlay').addEventListener('click', () => {
       });
   }
 
-  // カード購入
-  const allCards = [...gameState.cards.tier1, ...gameState.cards.tier2, ...gameState.cards.tier3];
-  const buyableCards = allCards.filter(c => canBuyCard(c));
-  if (buyableCards.length > 0) {
-      const card = buyableCards[0];
-      const tier = gameState.cards.tier1.includes(card) ? 'tier1' :
-                   gameState.cards.tier2.includes(card) ? 'tier2' : 'tier3';
-      actions.push(() => buyCard(card, tier));
-  }
 
-  // カード予約
-  if (gameState.reservedCards.length < 2) {
-      actions.push(() => {
-          const card = allCards[0];
-          const tier = gameState.cards.tier1.includes(card) ? 'tier1' :
-                       gameState.cards.tier2.includes(card) ? 'tier2' : 'tier3';
-          reserveCard(card, tier);
-      });
-  }
 
   if (actions.length > 0) {
       actions[Math.floor(Math.random() * actions.length)]();
